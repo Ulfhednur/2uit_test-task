@@ -2,78 +2,86 @@
 
 namespace app\models;
 
+use OpenApi\Annotations as OA;
 use Yii;
 use yii\base\Model;
 
 /**
- * LoginForm is the model behind the login form.
  *
- * @property-read User|null $user
+ * @OA\Schema(
+ *     schema="loginForm",
+ *     @OA\Property(property="username", type="string", example="someuser", description="Логин"),
+ *     @OA\Property(property="password", type="string", example="somepassword", description="Пароль"),
+ * ),
+ *
+ * Модель для первичной авторизации по логину-паролю для получения токена.
+ *
+ * @property-read Identity|bool|null $user
  *
  */
 class LoginForm extends Model
 {
-    public $username;
-    public $password;
-    public $rememberMe = true;
+    public string $username;
+    public string $password;
 
-    private $_user = false;
-
+    private Identity|bool|null $_user = false;
 
     /**
-     * @return array the validation rules.
+     * {@inheritdoc}
      */
-    public function rules()
+    public function formName(): string
+    {
+        return '';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules(): array
     {
         return [
-            // username and password are both required
             [['username', 'password'], 'required'],
-            // rememberMe must be a boolean value
-            ['rememberMe', 'boolean'],
-            // password is validated by validatePassword()
             ['password', 'validatePassword'],
         ];
     }
 
     /**
-     * Validates the password.
-     * This method serves as the inline validation for password.
+     * Валидатор пароля
      *
-     * @param string $attribute the attribute currently being validated
-     * @param array $params the additional name-value pairs given in the rule
+     * @param string $attribute
      */
-    public function validatePassword($attribute, $params)
+    public function validatePassword(string $attribute)
     {
         if (!$this->hasErrors()) {
             $user = $this->getUser();
 
             if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute, 'Incorrect username or password.');
+                $this->addError($attribute, 'Не правильно имя пользователя или пароль.');
             }
         }
     }
 
     /**
-     * Logs in a user using the provided username and password.
-     * @return bool whether the user is logged in successfully
+     * Авторизует пользователя по паре логин-пароль.
+     * @return bool
      */
-    public function login()
+    public function login(): bool
     {
         if ($this->validate()) {
-            return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600*24*30 : 0);
+            $user = $this->getUser();
+            return Yii::$app->user->login($user);
         }
         return false;
     }
 
     /**
-     * Finds user by [[username]]
-     *
-     * @return User|null
+     * Находит пользователя по логину
+     * @return Identity|bool|null
      */
-    public function getUser()
+    public function getUser(): Identity|bool|null
     {
         if ($this->_user === false) {
-            $this->_user = User::findByUsername($this->username);
+            $this->_user = Identity::findByUsername($this->username);
         }
 
         return $this->_user;

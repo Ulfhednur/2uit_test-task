@@ -5,6 +5,7 @@ $db = require __DIR__ . '/db.php';
 
 $config = [
     'id' => 'basic',
+    'timeZone' => 'Europe/Moscow',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'aliases' => [
@@ -13,15 +14,17 @@ $config = [
     ],
     'components' => [
         'request' => [
-            // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
-            'cookieValidationKey' => 'n844TDWns088ha6Qdl0_I1m1c5ggGVK3',
+            'cookieValidationKey' => 'hJgCBMxIog1iGOtiJowSO_4VFaxA3dDO',
+            'parsers' => [
+                'application/json' => yii\web\JsonParser::class,
+            ]
         ],
         'cache' => [
-            'class' => 'yii\caching\FileCache',
+            'class' => yii\caching\FileCache::class,
         ],
         'user' => [
-            'identityClass' => 'app\models\User',
-            'enableAutoLogin' => true,
+            'identityClass' => app\models\Identity::class,
+            'enableAutoLogin' => false,
         ],
         'errorHandler' => [
             'errorAction' => 'site/error',
@@ -41,15 +44,55 @@ $config = [
                 ],
             ],
         ],
+        'fileStorage' => [
+            'class' => yii2tech\filestorage\local\Storage::class,
+            'basePath' => '@FileStorage',
+            'baseUrl' => '@web/files',
+            'dirPermission' => 0775,
+            'filePermission' => 0755,
+            'buckets' => [
+                'itemsFiles' => [
+                    'baseSubPath' => 'items',
+                    'fileSubDirTemplate' => '{^name}/{^^name}',
+                ],
+            ]
+        ],
         'db' => $db,
-        /*
+        'jwt' => [
+            'class' => \kaabar\jwt\Jwt::class,
+            'key' => 'U}MpK|~WBNd4iDCDCZOXlppS%xcbZV65apbC$GR27TOwsvU57FP*UYK}By3Qrz34',
+        ],
         'urlManager' => [
             'enablePrettyUrl' => true,
+            'enableStrictParsing' => true,
             'showScriptName' => false,
             'rules' => [
+                [
+                    'class' => \yii\rest\UrlRule::class,
+                    'pluralize' => false,
+                    'controller' => ['auth' => 'auth'],
+                    'extraPatterns' => [
+                        'POST login' => 'login',
+                        'OPTIONS' => 'options',
+                        'OPTIONS login' => 'options',
+                        'OPTIONS refresh-token' => 'options',
+                        '' => 'options',
+                    ],
+                ],
+                [
+                    'class' => \yii\rest\UrlRule::class,
+                    'pluralize' => false,
+                    'controller' => ['items' => 'items'],
+                    'extraPatterns' => [
+                        'PUT,PATCH' => 'update',
+                        'POST' => 'create',
+                        'GET,HEAD ' => 'index',
+                        'OPTIONS' => 'options',
+                        '' => 'options',
+                    ],
+                ],
             ],
         ],
-        */
     ],
     'params' => $params,
 ];
@@ -58,14 +101,14 @@ if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment
     $config['bootstrap'][] = 'debug';
     $config['modules']['debug'] = [
-        'class' => 'yii\debug\Module',
+        'class' => yii\debug\Module::class,
         // uncomment the following to add your IP if you are not connecting from localhost.
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
 
     $config['bootstrap'][] = 'gii';
     $config['modules']['gii'] = [
-        'class' => 'yii\gii\Module',
+        'class' => yii\gii\Module::class,
         // uncomment the following to add your IP if you are not connecting from localhost.
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
